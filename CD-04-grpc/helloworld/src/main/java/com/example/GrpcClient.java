@@ -10,7 +10,7 @@ public class GrpcClient {
 
     public static void main(String[] args) {
         ManagedChannel channel = ManagedChannelBuilder
-                .forAddress("localhost", 50051)
+                .forAddress("34.51.149.246", 50051)
                 .usePlaintext()
                 .build();
 
@@ -20,6 +20,7 @@ public class GrpcClient {
 
             HelloRequest request = HelloRequest.newBuilder()
                     .setName("John")
+                    .setRepetitions(3)
                     .build();
 
             HelloResponse response = stub.sayHello(request);

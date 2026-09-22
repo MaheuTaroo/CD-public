@@ -12,6 +12,7 @@ service GreetingService {
 
 message HelloRequest {
   string name = 1;
+  uint32 repetitions = 2;
 }
 
 message HelloResponse {

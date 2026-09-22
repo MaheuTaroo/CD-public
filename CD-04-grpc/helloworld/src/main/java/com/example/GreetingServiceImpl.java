@@ -14,7 +14,7 @@ public class GreetingServiceImpl
             StreamObserver<HelloResponse> responseObserver) {
 
         HelloResponse response = HelloResponse.newBuilder()
-                .setMessage("Hello, " + request.getName() + "!")
+                .setMessage("Hello, " + request.getName().repeat(request.getRepetitions()) + "!")
                 .build();
 
         responseObserver.onNext(response);
