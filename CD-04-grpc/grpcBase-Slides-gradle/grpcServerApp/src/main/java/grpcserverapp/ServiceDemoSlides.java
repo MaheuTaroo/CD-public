@@ -2,6 +2,7 @@ package grpcserverapp;
 
 import io.grpc.Status;
 import io.grpc.StatusException;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import servicestubs.*;
 
@@ -96,6 +97,31 @@ public class ServiceDemoSlides extends ServiceGrpc.ServiceImplBase {
                 responseObserver.onCompleted();
             }
         };
+    }
+
+    @Override
+    public void divide(
+        DivOperands operands,
+        StreamObserver<DivResult> responseObserver
+    ) {
+        if (operands.getDivisor() == 0) {
+            responseObserver.onError(
+                Status
+                    .INVALID_ARGUMENT
+                    .withDescription("Divisor should not be zero")
+                    .asRuntimeException()
+            );
+            return;
+        }
+
+        responseObserver.onNext(
+            DivResult
+                .newBuilder()
+                .setQuotient(operands.getDividend() / operands.getDivisor())
+                .setRemainder(operands.getDividend() % operands.getDivisor())
+                .build()
+        );
+        responseObserver.onCompleted();
     }
 
     private void simulateExecutionTime() {

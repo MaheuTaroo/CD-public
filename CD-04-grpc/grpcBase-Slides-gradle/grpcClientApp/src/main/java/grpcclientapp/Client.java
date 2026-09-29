@@ -2,6 +2,8 @@ package grpcclientapp;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import servicestubs.*;
 
@@ -46,6 +48,10 @@ public class Client {
                             addSequenceOfNumbersCall(); break;
                         case 5:
                             bidirectionalStreamingCall(); break;
+                        case 6:
+                            divideOperandsSync(); break;
+                        case 7:
+                            divideOperandsAsync(); break;
                         case 99:  System.exit(0);
                     }
                 } catch (Exception ex) {
@@ -158,6 +164,67 @@ public class Client {
         // to terminate after get all results
     }
 
+    static void divideOperandsSync() {
+        Scanner scanner = new Scanner(System.in);
+        int a = Integer.parseInt(read("What is the dividend? ", scanner));
+        int b = Integer.parseInt(read("What is the divider? ", scanner));
+        try {
+            DivResult res = blockingStub.divide(
+                DivOperands.newBuilder().setDividend(a).setDivisor(b).build()
+            );
+            System.out.printf(
+                "%d / %d = quotient %d, remainder %d\n",
+                a,
+                b,
+                res.getQuotient(),
+                res.getRemainder()
+            );
+        }
+        catch (StatusRuntimeException sre) {
+            Status s = sre.getStatus();
+            System.err.printf(
+                    "Error while dividing: %s (code: %d - %s)",
+                    s.getDescription(),
+                    s.getCode().value(),
+                    s.getCode().name()
+            );
+        }
+    }
+
+    static void divideOperandsAsync() {
+        Scanner scanner = new Scanner(System.in);
+        int a = Integer.parseInt(read("What is the dividend? ", scanner));
+        int b = Integer.parseInt(read("What is the divider? ", scanner));
+        noBlockStub.divide(
+            DivOperands.newBuilder().setDividend(a).setDivisor(b).build(),
+            new StreamObserver<>() {
+            @Override
+            public void onNext(DivResult divResult) {
+                System.out.printf(
+                    "%d / %d = quotient %d, remainder %d\n",
+                    a,
+                    b,
+                    divResult.getQuotient(),
+                    divResult.getRemainder()
+                );
+            }
+            @Override
+            public void onError(Throwable throwable) {
+                Status s = ((StatusRuntimeException)throwable).getStatus();
+                System.err.printf(
+                    "Error while dividing: %s (code: %d - %s)",
+                    s.getDescription(),
+                    s.getCode().value(),
+                    s.getCode().name()
+                );
+            }
+            @Override
+            public void onCompleted() {
+                System.out.println("Division completed");
+            }
+        });
+    }
+
 
     private static int Menu() {
         int op;
@@ -170,11 +237,13 @@ public class Client {
             System.out.println(" 3 - Case server stream: get N even numbers: Asynchronous call");
             System.out.println(" 4 - Case client stream: add sequence of numbers between 1 and N");
             System.out.println(" 5 - Case bidirectional streaming (client and server): multiple add operations)");
+            System.out.println(" 6 - Divide integer operands (synchronously)");
+            System.out.println(" 7 - Divide integer operands (asynchronously)");
             System.out.println("99 - Exit");
             System.out.println();
             System.out.println("Choose an Option?");
             op = scan.nextInt();
-        } while (!((op >= 1 && op <= 5) || op == 99));
+        } while (!((op >= 1 && op <= 7) || op == 99));
         return op;
     }
 

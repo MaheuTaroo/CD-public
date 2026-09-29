@@ -15,6 +15,8 @@ service Service {
   rpc addSeqOfNumbers (stream IntNumber) returns (IntNumber);
   // multiple add operations using a bidirectional stream
   rpc multipleAdd(stream AddOperands) returns (stream AddResult);
+  // divide two integer operands
+  rpc divide(DivOperands) returns (DivResult);
 }
 
 message ProtoVoid {}
@@ -32,4 +34,14 @@ message AddOperands {
 message AddResult {
   string addID = 1;
   int32 result = 2;
+}
+
+message DivOperands {
+  int32 dividend = 1;
+  int32 divisor = 2;
+}
+
+message DivResult {
+  int32 quotient = 1;
+  int32 remainder = 2;
 }
