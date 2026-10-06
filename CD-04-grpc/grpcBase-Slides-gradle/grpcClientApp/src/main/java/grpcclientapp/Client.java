@@ -8,7 +8,6 @@ import io.grpc.stub.StreamObserver;
 import servicestubs.*;
 
 import java.util.*;
-import java.util.concurrent.Semaphore;
 
 public class Client {
     // generic ClientApp for Calling a grpc Service
@@ -52,7 +51,10 @@ public class Client {
                             divideOperandsSync(); break;
                         case 7:
                             divideOperandsAsync(); break;
-                        case 99:  System.exit(0);
+                        case 8:
+                            getPrimeNumbersAsync(); break;
+                        case 99:
+                            end = true; break;
                     }
                 } catch (Exception ex) {
                     System.out.println("Execution call Error  !");
@@ -107,7 +109,7 @@ public class Client {
     static void addSequenceOfNumbersCall() {
         // Add sequence of numbers
         int N = Integer.parseInt(read("Enter N?", new Scanner(System.in)));
-        StreamObserver<IntNumber> streamNumbers = noBlockStub.addSeqOfNumbers(new StreamObserver<IntNumber>() {
+        StreamObserver<IntNumber> streamNumbers = noBlockStub.addSeqOfNumbers(new StreamObserver<>() {
             @Override
             public void onNext(IntNumber intNumber) {
                 System.out.println("Add total:" + intNumber.getIntNumber());
@@ -134,7 +136,7 @@ public class Client {
 
     static void bidirectionalStreamingCall() {
         // bidirectional streaming - Do multiple add operations
-        StreamObserver<AddOperands> streamDoAddOperations = noBlockStub.multipleAdd(new StreamObserver<AddResult>() {
+        StreamObserver<AddOperands> streamDoAddOperations = noBlockStub.multipleAdd(new StreamObserver<>() {
             @Override
             public void onNext(AddResult addResult) {
                 System.out.println("Add Result ID(" + addResult.getAddID() + ")=" + addResult.getResult());
@@ -225,6 +227,38 @@ public class Client {
         });
     }
 
+    static void getPrimeNumbersAsync() throws InterruptedException { // get N even numbers
+        // Asynchronous non blocking call
+        PrimeNumbersStream[] primeStreams = {
+            new PrimeNumbersStream(1, 100),
+            new PrimeNumbersStream(101, 200),
+            new PrimeNumbersStream(201, 300),
+            new PrimeNumbersStream(301, 400),
+            new PrimeNumbersStream(401, 500)
+        };
+        for (int i = 0; i < 5; i++) {
+            PrimeNumbersStream stream = primeStreams[i];
+            noBlockStub.findPrimes(
+                IntervalNumbers
+                    .newBuilder()
+                    .setStart(stream.start)
+                    .setEnd(stream.end)
+                    .build(),
+                stream
+            );
+        }
+
+        int streamToWait = 0, lastToldStream = -1;
+        while (streamToWait < 5) {
+            if (primeStreams[streamToWait].isCompleted())
+                System.out.printf("Completed %d streams\n", ++streamToWait);
+            if (streamToWait != 5 && lastToldStream != streamToWait) {
+                System.out.printf("Waiting for stream #%d...\n", streamToWait);
+                lastToldStream = streamToWait;
+            }
+            Thread.sleep(10);
+        }
+    }
 
     private static int Menu() {
         int op;
@@ -239,11 +273,12 @@ public class Client {
             System.out.println(" 5 - Case bidirectional streaming (client and server): multiple add operations)");
             System.out.println(" 6 - Divide integer operands (synchronously)");
             System.out.println(" 7 - Divide integer operands (asynchronously)");
+            System.out.println(" 8 - Find primes between 1 and 500 (asynchronously)");
             System.out.println("99 - Exit");
             System.out.println();
             System.out.println("Choose an Option?");
             op = scan.nextInt();
-        } while (!((op >= 1 && op <= 7) || op == 99));
+        } while (!((op >= 1 && op <= 8) || op == 99));
         return op;
     }
 

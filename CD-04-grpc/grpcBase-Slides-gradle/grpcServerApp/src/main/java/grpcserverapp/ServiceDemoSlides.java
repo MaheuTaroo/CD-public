@@ -2,7 +2,6 @@ package grpcserverapp;
 
 import io.grpc.Status;
 import io.grpc.StatusException;
-import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import servicestubs.*;
 
@@ -121,6 +120,56 @@ public class ServiceDemoSlides extends ServiceGrpc.ServiceImplBase {
                 .setRemainder(operands.getDividend() % operands.getDivisor())
                 .build()
         );
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void findPrimes(
+        IntervalNumbers request,
+        StreamObserver<IntNumber> responseObserver
+    ) {
+        if (request.getStart() < 0) {
+            responseObserver.onError(
+                Status
+                    .INVALID_ARGUMENT
+                    .withDescription("Start cannot be negative")
+                    .asRuntimeException()
+            );
+            return;
+        }
+        if (request.getEnd() < 0) {
+            responseObserver.onError(
+                Status
+                    .INVALID_ARGUMENT
+                    .withDescription("End cannot be negative")
+                    .asRuntimeException()
+            );
+            return;
+        }
+        if (request.getStart() >= request.getEnd()) {
+            responseObserver.onError(
+                Status
+                    .INVALID_ARGUMENT
+                    .withDescription("End must strictly be lower than start")
+                    .asRuntimeException()
+            );
+            return;
+        }
+
+        boolean isPrime;
+        for(int i = request.getStart(); i <= request.getEnd(); i++)
+        {
+            isPrime = true;
+            for(int j = 2; j < i; j++)
+            {
+                if (i % j == 0) {
+                    isPrime = false;
+                }
+            }
+            if (isPrime)
+                responseObserver.onNext(IntNumber.newBuilder().setIntNumber(i).build());
+        }
+
         responseObserver.onCompleted();
     }
 

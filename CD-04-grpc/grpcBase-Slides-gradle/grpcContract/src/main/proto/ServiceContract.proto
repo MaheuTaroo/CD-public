@@ -17,6 +17,8 @@ service Service {
   rpc multipleAdd(stream AddOperands) returns (stream AddResult);
   // divide two integer operands
   rpc divide(DivOperands) returns (DivResult);
+  // get the prime numbers within a range
+  rpc findPrimes(IntervalNumbers) returns (stream IntNumber);
 }
 
 message ProtoVoid {}
@@ -44,4 +46,9 @@ message DivOperands {
 message DivResult {
   int32 quotient = 1;
   int32 remainder = 2;
+}
+
+message IntervalNumbers {
+  int32 start = 1;
+  int32 end = 2;
 }
