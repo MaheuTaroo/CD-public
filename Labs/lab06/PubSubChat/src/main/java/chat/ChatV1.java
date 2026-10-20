@@ -23,16 +23,24 @@ public class ChatV1 {
         try (Connection conn = factory.newConnection(); Channel ch = conn.createChannel()) {
 
             // TODO 1: declarar o exchange
+            ch.exchangeDeclare("chat.todos", BuiltinExchangeType.FANOUT, true);
 
             // Fila temporária: nome gerado pelo broker, exclusiva desta ligação,
             // apagada quando o cliente termina.
             String fila = ch.queueDeclare().getQueue();
 
             // TODO 2: criar o(s) binding(s) da fila ao exchange
+            ch.queueBind(fila, "chat.todos", "");
 
-            ch.basicConsume(fila, true, (tag, msg) -> {
+            ch.basicConsume(fila, false, (tag, msg) -> {
                 String texto = new String(msg.getBody(), StandardCharsets.UTF_8);
-                System.out.println(texto);                 // TODO 3: mostrar também o tema, quando existir
+                if (texto.startsWith("[" + nome))
+                    ch.basicNack(msg.getEnvelope().getDeliveryTag(), false, false);
+                else {
+                    ch.basicAck(msg.getEnvelope().getDeliveryTag(), false);
+                    System.out.println(texto);                 // TODO 3: mostrar também o tema, quando existir
+                }
+
             }, tag -> {});
 
             System.out.println("Escreva mensagens (/sair para terminar)");
@@ -40,6 +48,12 @@ public class ChatV1 {
                 String linha = in.nextLine();
                 if (linha.equals("/sair")) break;
                 // TODO 4: publicar a mensagem, no formato "[nome] texto"
+                ch.basicPublish(
+                    "chat.todos",
+                    "",
+                    null,
+                    String.format("[%s] %s", nome, linha).getBytes(StandardCharsets.UTF_8)
+                );
             }
         }
     }
